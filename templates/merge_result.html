@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>合稿结果</title>
+<style>
+  body { font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+         max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .error { background: #fdecea; border-color: #f5c6c0; color: #a33; }
+  .ok { color: #176f2c; font-weight: 600; }
+  .bad { color: #b3261e; font-weight: 600; }
+  code { background: #f6f8fa; border-radius: 4px; padding: 0 .3em; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: .4rem .6rem; text-align: left; }
+  th { background: #f0f0f0; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  a.button { display: inline-block; padding: .5rem 1.2rem; font-size: 1rem;
+             background: #176f2c; color: #fff; border-radius: 6px; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>合稿结果</h1>
+
+{% if result.errors %}
+<div class="card error">
+  <h2>三稿不一致，无法合稿</h2>
+  <ul>
+    {% for e in result.errors %}
+    <li>{{ e }}</li>
+    {% endfor %}
+  </ul>
+  <p>请确认三稿出自同一份底稿，且每片裁片在三稿中沿用同一个编号。</p>
+</div>
+{% else %}
+
+  {% if result.conflicts %}
+  <div class="card error">
+    <h2>字段冲突（{{ result.conflicts | length }} 处）——两方都改了且新值不同</h2>
+    <table>
+      <thead>
+        <tr><th>裁片编号</th><th>字段</th><th>底稿</th><th>修改稿甲</th><th>修改稿乙</th></tr>
+      </thead>
+      <tbody>
+        {% for c in result.conflicts %}
+        <tr>
+          <td>{{ c.id }}</td>
+          <td>{{ c.label }}</td>
+          <td class="num">{{ c.base }}</td>
+          <td class="num">{{ c.a }}</td>
+          <td class="num">{{ c.b }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p>请两位排版员协商后改掉其中一稿，再重新合稿。</p>
+  </div>
+  {% endif %}
+
+  {% if result.cycle %}
+  <div class="card error">
+    <h2>层序成环</h2>
+    <p>以下裁片的上下关系构成环，无法确定层序（排在前面者压在后面者之下，末尾又压回开头）：</p>
+    <p><code>{{ result.cycle | join(" → ") }} → {{ result.cycle[0] }}</code></p>
+    <p>请检查这些裁片在两份修改稿中的上下调换，再重新合稿。</p>
+  </div>
+  {% endif %}
+
+  {% if report %}
+  <div class="card">
+    <span class="ok">合稿成功 ✓</span> —— 裁框与落版位置已按编号合并，层序已合并。
+    以下为合稿后的刊用范围核查：
+  </div>
+
+  {% include "_report.html" %}
+
+  <div class="card">
+    {% if token %}
+      <a class="button" href="/download/{{ token }}">下载合稿 JSON</a>
+      <p>文件保留裁片编号，可直接上传到原核查页。</p>
+    {% else %}
+      <p class="bad">存在缺许可的露出，无法下载合稿 JSON。请先解决上方列出的缺口。</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+{% endif %}
+
+<p><a href="/merge">← 重新合稿</a> · <a href="/">返回露出核查</a></p>
+</body>
+</html>

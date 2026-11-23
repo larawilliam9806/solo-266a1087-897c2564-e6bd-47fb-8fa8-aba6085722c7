@@ -1,0 +1,35 @@
+<div class="card">
+  展板 {{ report.board[0] }} × {{ report.board[1] }} 像素，共 {{ report.piece_count }} 片裁片；
+  露出总面积 {{ report.total_exposed }} 像素²，
+  缺许可面积
+  {% if report.clean %}
+    <span class="ok">0 —— 整页无缺口 ✓</span>
+  {% else %}
+    <span class="bad">{{ report.total_unlicensed }} 像素² —— 存在未获许可的露出 ✗</span>
+  {% endif %}
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>原片编号</th><th>署名</th>
+      <th>露出面积 (px²)</th><th>缺许可面积 (px²)</th><th>一处未获许可的原片坐标</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in report.rows %}
+    <tr>
+      <td>{{ row.id }}</td>
+      <td>{{ row.credit }}</td>
+      <td class="num">{{ row.exposed }}</td>
+      {% if row.unlicensed > 0 %}
+        <td class="num bad">{{ row.unlicensed }}</td>
+        <td>({{ row.point[0] }}, {{ row.point[1] }})</td>
+      {% else %}
+        <td class="num">0</td>
+        <td>—</td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

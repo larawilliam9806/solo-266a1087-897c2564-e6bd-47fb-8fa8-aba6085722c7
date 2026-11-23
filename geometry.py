@@ -109,7 +109,8 @@ def parse_input(data):
     """校验并解析上传的 JSON，返回 (board, photos, pieces)。
 
     photos: [{"id", "credit", "permit": (x0,y0,x1,y1)}]，保持声明顺序。
-    pieces: [{"photo", "crop": rect, "at": (ax, ay)}]，从下往上排列。
+    pieces: [{"id", "photo", "crop": rect, "at": (ax, ay)}]，从下往上排列。
+    裁片 id 可选（合稿必需、核查可选）；出现时必须是非空字符串且不得重复。
     """
     if not isinstance(data, dict):
         raise ValueError("顶层必须是 JSON 对象")
@@ -147,9 +148,17 @@ def parse_input(data):
     if not isinstance(raw_pieces, list):
         raise ValueError("pieces 必须是数组（从下往上排列）")
     pieces = []
+    seen_piece_ids = set()
     for i, pc in enumerate(raw_pieces):
         if not isinstance(pc, dict):
             raise ValueError(f"pieces[{i}] 必须是对象")
+        piece_id = pc.get("id")
+        if piece_id is not None:
+            if not isinstance(piece_id, str) or not piece_id:
+                raise ValueError(f"pieces[{i}].id 必须是非空字符串")
+            if piece_id in seen_piece_ids:
+                raise ValueError(f"裁片编号重复：{piece_id!r}")
+            seen_piece_ids.add(piece_id)
         pid = pc.get("photo")
         if pid not in seen:
             raise ValueError(f"pieces[{i}].photo 引用了未声明的原片：{pid!r}")
@@ -159,7 +168,7 @@ def parse_input(data):
             raise ValueError(f"pieces[{i}].at 必须是对象")
         ax = _as_int(at.get("x"), f"pieces[{i}].at.x")
         ay = _as_int(at.get("y"), f"pieces[{i}].at.y")
-        pieces.append({"photo": pid, "crop": crop, "at": (ax, ay)})
+        pieces.append({"id": piece_id, "photo": pid, "crop": crop, "at": (ax, ay)})
 
     return board, photos, pieces
 

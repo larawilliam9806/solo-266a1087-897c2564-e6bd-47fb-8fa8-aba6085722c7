@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>合稿</title>
+<style>
+  body { font-family: system-ui, "PingFang SC", "Microsoft YaHei", sans-serif;
+         max-width: 860px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; }
+  .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .error { background: #fdecea; border-color: #f5c6c0; color: #a33; }
+  code { background: #f6f8fa; border-radius: 4px; padding: 0 .3em; }
+  button { padding: .5rem 1.2rem; font-size: 1rem; cursor: pointer; }
+  label { display: block; margin: .6rem 0; }
+</style>
+</head>
+<body>
+<h1>合稿</h1>
+<p>两位排版员各自改了同一份展板：上传<strong>底稿</strong>与<strong>两份修改稿</strong>，把改动合成一份可送印的稿件。</p>
+
+{% if error %}
+<div class="card error">{{ error }}</div>
+{% endif %}
+
+<div class="card">
+  <form action="/merge" method="post" enctype="multipart/form-data">
+    <label>底稿：<input type="file" name="base" accept=".json,application/json" required></label>
+    <label>修改稿甲：<input type="file" name="draft_a" accept=".json,application/json" required></label>
+    <label>修改稿乙：<input type="file" name="draft_b" accept=".json,application/json" required></label>
+    <button type="submit">合稿</button>
+  </form>
+  <p><a href="/">← 返回露出核查</a></p>
+</div>
+
+<div class="card">
+<h2>合稿规则</h2>
+<ul>
+  <li>三稿都使用展板核查的 JSON 格式，但每片裁片必须带唯一 <code>id</code>；同一裁片在三稿中沿用同一个 <code>id</code>。</li>
+  <li>展板尺寸、原片清单、裁片编号集合、各裁片所用的原片必须一致，否则无法合稿。</li>
+  <li>裁框 <code>crop</code> 与落版位置 <code>at</code> 按裁片编号逐字段合并：只有一方改动、或两方改得一样就采用；两方都改且新值不同，会指出裁片编号与字段。</li>
+  <li>层序：任意两片，只要有一稿调换了上下关系就按调换后的顺序，两稿都没调换就保留底稿顺序；若这些关系成环，会指出环上的裁片编号。</li>
+  <li>合稿后自动重新核对刊用范围；只有无冲突且无缺许可时才可下载合稿 JSON。文件保留裁片编号，可直接上传到原核查页。</li>
+</ul>
+</div>
+</body>
+</html>
